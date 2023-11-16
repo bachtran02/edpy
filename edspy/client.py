@@ -9,7 +9,8 @@ from collections import defaultdict
 from inspect import getmembers, ismethod
 from urllib.parse import urlparse, parse_qs
 
-from .events import Event, ThreadNewEvent, ThreadUpdateEvent
+from .models import Course, Thread
+from .events import ThreadNewEvent, ThreadUpdateEvent
 
 from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
@@ -22,14 +23,8 @@ BASE_LOGIN_URL = 'https://edstem.org/us/login'
 
 PICKLE_FILE = 'token.pkl'
 
-_log = logging.getLogger(__name__)
+_log = logging.getLogger('edspy')
 
-
-def listener(*events: Event):
-    def wrapper(func):
-        setattr(func, '_ed_events', events)
-        return func
-    return wrapper
 
 class EdClient():
 
@@ -49,6 +44,7 @@ class EdClient():
         self._message_queue: list[str] = []
         self._message_sent = defaultdict(dict)
 
+        self.user, self.user_courses = None, None
         self._load_cache()
 
     async def subscribe(self, course_ids: list = []):
@@ -72,6 +68,20 @@ class EdClient():
             events = listener._ed_events
             for event in events:
                 self._event_hooks[event.__name__].append(listener)
+
+    async def _get_user(self):
+
+        if not self.token:
+            raise ValueError('Token not found')
+        
+        async with self._session.get(
+            url='https://{}/user'.format(API_HOST),
+            headers={'X-Token': self.token}) as res:
+          if res.status != 200:
+              raise IOError('Failed to make request for user')
+          await res.read()
+        
+        self.user = await res.json()
 
     def _load_cache(self):
         try:
@@ -171,14 +181,15 @@ class EdClient():
                 await asyncio.sleep(backoff)
             else:
                 _log.info('Connection to websocket established!')
-                
+                attempt = 0
+
                 if self._message_queue:
                     for message in self._message_queue:
                         await self._send(message)
-
                     self._message_queue.clear()
-
-                attempt = 0
+                
+                await self._get_user()
+                self.user_courses = self.user['courses']
                 await self._listen()
 
     async def _send(self, data: dict):
@@ -201,15 +212,24 @@ class EdClient():
         
         event_type, data = message['type'], message.get('data')
         event = None
-        
-        if event_type == 'course.subscribe':
-            sent_msg = self._message_sent[message['id']]
-            _log.info(f'Course {sent_msg["oid"]} subscribed successfully!')
+
+        if event_type in ('chat.init', 'course.subscribe'):
+            if event_type == 'course.subscribe':
+                sent_msg = self._message_sent[message['id']]
+                _log.info(f'Course {sent_msg["oid"]} subscribed successfully!')
             return
+        
         if event_type == 'thread.new':
-            event = ThreadNewEvent(data.get('thread'))
+            course = Course(next(filter(
+                lambda x: x['course']['id'] == data['thread']['course_id'],
+                self.user_courses)).get('course'))
+            thread = Thread(data.get('thread'))
+            event = ThreadNewEvent(thread, course)
+
         elif event_type == 'thread.update':
-            event = ThreadUpdateEvent(data.get('thread'))
+            thread = Thread(data.get('thread'))
+            event = ThreadUpdateEvent(thread)
+
         else:
             return
         
