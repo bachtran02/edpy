@@ -90,8 +90,14 @@ class EdClient():
                 self.token, self.ws_token = data.get('token'), data.get('ws_token')
         except FileNotFoundError as e:
             _log.info('Pickle file doesn\'t exist.')
+        except EOFError as e:
+            _log.info('Pickle file is empty.')
 
     def _cache(self):
+
+        if not self.token or not self.ws_token:
+            return
+        
         data = {'token': self.token, 'ws_token': self.ws_token}
         with open(PICKLE_FILE, 'wb') as f:
             pickle.dump(data, f)
