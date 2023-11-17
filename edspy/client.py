@@ -106,6 +106,9 @@ class EdClient():
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument("--disable-setuid-sandbox")
+        options.add_argument('--disable-dev-shm-usage')     
         options.add_experimental_option("detach", True)
 
         driver = webdriver.Chrome(
@@ -131,10 +134,11 @@ class EdClient():
                 (By.ID, 'dont-trust-browser-button'))).click()
         except TimeoutError as e:
             driver.close()
-            _log.error('Duo 2-Step Authentication failed!')
+            _log.error('Duo 2-Step Authentication failed.')
             raise e('Failed to verify Duo 2-Step Authentication')
 
         # successfully logged in 
+        _log.info('Successfully logged in.')
         WebDriverWait(driver, 30).until(EC.presence_of_element_located(
             (By.CLASS_NAME, 'dash-courses')))
         
@@ -183,7 +187,7 @@ class EdClient():
                     _log.error('Failed to connect to websocket with status code {} and\
                         error message "{}".Retrying...'.format(ce.status, ce.message))
 
-                backoff = min(10 * attempt, 60)
+                backoff = min(5 * attempt, 60)
                 await asyncio.sleep(backoff)
             else:
                 _log.info('Connection to websocket established!')
