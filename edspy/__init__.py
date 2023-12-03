@@ -1,5 +1,5 @@
-import sys
 import logging
+import logging.config
 from dotenv import load_dotenv
 
 from .client import EdClient
@@ -8,17 +8,40 @@ from .models import *
 
 load_dotenv()
 
-# config logger
-log = logging.getLogger('edspy')
+EDSPY_DEFAULT_LOGGER = {
+    'version': 1,
+    'formatters': { 
+        'default': { 
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': { 
+        'default': { 
+            'formatter': 'default',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',
+        },
+    },
+    'loggers': { 
+        'edspy.client': {
+            'handlers': ['default'],
+            'level': 'INFO',
+        }
+    }
+}
 
-fmt = logging.Formatter(
-    '[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s',
-    datefmt='%H:%M:%S')
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(fmt)
-log.addHandler(handler)
-log.setLevel(logging.DEBUG)
+def enable_logger(config: dict = EDSPY_DEFAULT_LOGGER):
+    
+    try:
+        assert config is not None
+        logging.config.dictConfig(config)
+    except Exception as e:
+        pass
+    else:
+        return
+    
+    logging.config.dictConfig(EDSPY_DEFAULT_LOGGER)
 
 
 def listener(*events: Event):
