@@ -17,13 +17,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+CLOSE_TYPES = (
+    aiohttp.WSMsgType.CLOSE,
+    aiohttp.WSMsgType.CLOSING,
+    aiohttp.WSMsgType.CLOSED
+)
+
 UNI_SUFFIX = 'berkeley.edu'
 API_HOST = 'us.edstem.org/api'
 BASE_LOGIN_URL = 'https://edstem.org/us/login'
 
 PICKLE_FILE = 'token.pkl'
 
-_log = logging.getLogger('edspy')
+_log = logging.getLogger('edspy.client')
 
 
 class EdClient():
@@ -179,7 +185,11 @@ class EdClient():
             except aiohttp.WSServerHandshakeError as ce:
                 if isinstance(ce, aiohttp.WSServerHandshakeError):
                     if ce.status == 401:
-                        _log.info('Authentication failed. Trying to log in...')
+                        _log.info('Authentication failed.')
+                        if attempt == 10:
+                            _log.error('Credentials expired. Please log in again')
+                            raise ce
+                        _log.info('Trying to log in...')
                         self._login()
                     elif ce.status == 503:  # may happen at times
                         pass
@@ -216,13 +226,17 @@ class EdClient():
             if msg.type == aiohttp.WSMsgType.TEXT:
                 await self._handle_message(msg.json())
             elif msg.type == aiohttp.WSMsgType.ERROR:
-                pass
+                _log.error('Websocket connection closed with exception %s', self._ws.exception())
+            elif msg.type in CLOSE_TYPES:
+                _log.info('Websocket connection closed with [%d] %s', msg.data, msg.extra)
+                break
 
     async def _handle_message(self, message: dict):
         
         event_type, data = message['type'], message.get('data')
         event = None
 
+        _log.debug('Event: %s - Payload: %s', event_type, data)
         if event_type in ('chat.init', 'course.subscribe'):
             if event_type == 'course.subscribe':
                 sent_msg = self._message_sent[message['id']]
