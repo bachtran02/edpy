@@ -1,12 +1,9 @@
 import logging
 import logging.config
-from dotenv import load_dotenv
 
 from .client import EdClient
 from .events import *
 from .models import *
-
-load_dotenv()
 
 EDSPY_DEFAULT_LOGGER = {
     'version': 1,
@@ -24,7 +21,7 @@ EDSPY_DEFAULT_LOGGER = {
         },
     },
     'loggers': { 
-        'edspy.client': {
+        'edspy.transport': {
             'handlers': ['default'],
             'level': 'INFO',
         }
@@ -32,16 +29,10 @@ EDSPY_DEFAULT_LOGGER = {
 }
 
 def enable_logger(config: dict = EDSPY_DEFAULT_LOGGER):
-    
     try:
-        assert config is not None
         logging.config.dictConfig(config)
-    except Exception as e:
+    except Exception:
         pass
-    else:
-        return
-    
-    logging.config.dictConfig(EDSPY_DEFAULT_LOGGER)
 
 
 def listener(*events: Event):
