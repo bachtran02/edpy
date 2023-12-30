@@ -1,4 +1,4 @@
-from .models import Course, Thread
+from .models import Course, Thread, Comment
 
 class Event:
     pass
@@ -17,7 +17,10 @@ class ThreadUpdateEvent(Event):
       self.thread = thread
 
 class CommentNewEvent(Event):
-   pass
+   """Event when a new comment is made on a thread"""
+
+   def __init__(self, comment: Comment) -> None:
+      self.comment = comment
 
 class CourseCountEvent(Event):
    pass

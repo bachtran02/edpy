@@ -1,4 +1,26 @@
+class ThreadType:
+    """
+    Thread types when posting to Ed.
+    """
+    
+    POST          = 'post'
+    QUESTION      = 'question'
+    ANNOUNCEMENT  = 'announcement'
+
+    @classmethod
+    def from_str(cls, other: str):
+        try:
+            return cls[other.upper()]
+        except KeyError:
+            try:
+                return cls(other)
+            except ValueError as error:
+                raise ValueError(f'{other} is not a valid {cls.__name__} enum!') from error
+
 class Thread:
+    """
+    Thread object
+    """
 
     __slots__ = ('id', 'user_id', 'course_id', 'original_id', 'editor_id', 'accepted_id',
         'duplicate_id', 'number', 'type', 'title', 'content', 'document', 'category',
@@ -13,9 +35,15 @@ class Thread:
     def __init__(self, data: dict) -> None:
         self._raw = data
         for slot in self.__slots__:
-            setattr(self, slot, data.get(slot))
+            if slot == 'type':
+                setattr(self, slot, ThreadType.from_str(data.get(slot)))
+            else:
+                setattr(self, slot, data.get(slot))
 
 class Course:
+    """
+    Course object
+    """
 
     __slots__ = ('code', 'created_at', 'features', 'id', 'is_lab_regex_active', 
         'name', 'realm_id', 'session', 'settings', 'status', 'year', '_raw')
@@ -24,3 +52,19 @@ class Course:
         self._raw = data
         for slot in self.__slots__:
             setattr(self, slot, data.get(slot))
+
+class Comment:
+    """
+    Comment object
+    """
+
+    __slots__ = ('id', 'user_id', 'course_id', 'thread_id', 'original_id', 
+        'parent_id', 'editor_id', 'number', 'type', 'kind', 'content', 'document',
+        'flag_count', 'vote_count', 'is_endorsed', 'is_anonymous', 'is_private',
+        'is_resolved', 'created_at', 'updated_at', 'deleted_at', 'anonymous_id', 'user', '_raw')
+
+    def __init__(self, data: dict) -> None:
+        self._raw = data
+        for slot in self.__slots__:
+            setattr(self, slot, data.get(slot))
+            

@@ -7,8 +7,8 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from .errors import AuthenticationError, RequestError
-from .events import ThreadNewEvent, ThreadUpdateEvent
-from .models import Course, Thread
+from .events import ThreadNewEvent, ThreadUpdateEvent, CommentNewEvent
+from .models import Course, Thread, Comment
 
 if TYPE_CHECKING:
     from .client import EdClient
@@ -143,6 +143,10 @@ class Transport:
                 self.client.user_courses)).get('course'))
             thread = Thread(data.get('thread'))
             event = ThreadNewEvent(thread, course)
+
+        elif event_type == 'comment.new':
+            comment = Comment(data.get('comment'))
+            event = CommentNewEvent(comment)
 
         elif event_type == 'thread.update':
             thread = Thread(data.get('thread'))
