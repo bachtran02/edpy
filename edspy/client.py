@@ -51,10 +51,12 @@ class EdClient():
         await self._transport._connect()
         
     @_ensure_login
-    async def get_thread(self, thread_id):
+    async def get_thread(self, thread_id) -> GetThreadType:
 
         res = await self._transport._request('GET', f'/api/threads/{thread_id}')
-        print(res)
+        thread = Thread(res.get('thread'))
+        users = [CourseUser(user) for user in res.get('users')]
+        return GetThreadType(thread=thread, users=users)
 
 
     def add_event_hooks(self, cls):
