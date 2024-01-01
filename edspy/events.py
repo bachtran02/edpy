@@ -1,4 +1,6 @@
-from .models import Course, Thread, Comment
+from .models.comment import Comment
+from .models.course import Course
+from .models.thread import Thread
 
 class Event:
     pass

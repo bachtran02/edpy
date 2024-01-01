@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING
 
 from .errors import AuthenticationError, RequestError
 from .events import ThreadNewEvent, ThreadUpdateEvent, CommentNewEvent
-from .models import Course, Thread, Comment
+from .models.comment import Comment
+from .models.course import Course
+from .models.thread import Thread
 
 if TYPE_CHECKING:
     from .client import EdClient

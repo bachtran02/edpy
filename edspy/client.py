@@ -4,7 +4,10 @@ import typing as t
 from collections import defaultdict
 from inspect import getmembers, ismethod
 
-from .models import Thread
+from .models.thread import Thread, ThreadType
+from .models.user import CourseUser
+from .models.endpoints.threads import GetThreadType
+
 from .transport import Transport
 
 def _ensure_login(func):
