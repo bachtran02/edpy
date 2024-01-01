@@ -30,10 +30,10 @@ class Transport:
     def __init__(self, client: 'EdClient', ed_token: str) -> None:
 
         self.client = client
-        self.ed_token = ed_token or os.environ['ED_API_TOKEN']
+        self.ed_token = ed_token or os.getenv('ED_API_TOKEN')
 
-        self._token = None
         self._ws = None
+        self._ws_token = None
 
         self._session = aiohttp.ClientSession()
         
@@ -41,10 +41,10 @@ class Transport:
         self._message_queue: list[str] = []
         self._message_sent = defaultdict(dict)
 
-    async def _login(self):
+    async def _get_ws_token(self):
         
         res = await self._request('POST', '/api/renew_token')
-        self._token = res['token']
+        self._ws_token = res['token']
         _log.info('Token renewed successfully.')
 
     async def _request(self, method: str, endpoint: str, to=None):
@@ -77,7 +77,7 @@ class Transport:
             try:
                 self._ws = await self._session.ws_connect(
                     url='wss://{}/api/stream'.format(API_HOST),
-                    params={'_token': self._token or ''},
+                    params={'_token': self._ws_token or ''},
                     heartbeat=60)
             except aiohttp.WSServerHandshakeError as ce:
                 if isinstance(ce, aiohttp.WSServerHandshakeError):
@@ -87,7 +87,7 @@ class Transport:
                             _log.error('Failed due to unkwown reason.')
                             raise ce
                         _log.info('Attempting to renew token...')
-                        await self._login()
+                        await self._get_ws_token()
                     elif ce.status == 503:  # may happen at times
                         pass
                 else:
@@ -146,13 +146,13 @@ class Transport:
             thread = Thread(data.get('thread'))
             event = ThreadNewEvent(thread, course)
 
-        elif event_type == 'comment.new':
-            comment = Comment(data.get('comment'))
-            event = CommentNewEvent(comment)
-
         elif event_type == 'thread.update':
             thread = Thread(data.get('thread'))
             event = ThreadUpdateEvent(thread)
+
+        elif event_type == 'comment.new':
+            comment = Comment(data.get('comment'))
+            event = CommentNewEvent(comment)
 
         else:
             return

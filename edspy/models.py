@@ -35,10 +35,10 @@ class Thread:
     def __init__(self, data: dict) -> None:
         self._raw = data
         for slot in self.__slots__:
-            if slot == 'type':
-                setattr(self, slot, ThreadType.from_str(data.get(slot)))
-            else:
-                setattr(self, slot, data.get(slot))
+            if slot == 'type' and (thread_type := data.get(slot)):
+                setattr(self, slot, ThreadType.from_str(thread_type))
+                continue
+            setattr(self, slot, data.get(slot))
 
 class Course:
     """
