@@ -1,9 +1,23 @@
 import asyncio
 
+import typing as t
 from collections import defaultdict
 from inspect import getmembers, ismethod
 
+from .models import Thread
 from .transport import Transport
+
+def _ensure_login(func):
+    """
+    Decorator to ensure valid ed API key before calling the methods.
+    """
+
+    async def login_wrapper(self, *args, **kwargs):
+        if not self.logged_in:
+            await self._login()
+        return await func(self, *args, **kwargs)
+
+    return login_wrapper
 
 class EdClient():
 
@@ -11,26 +25,34 @@ class EdClient():
 
         self._event_hooks = defaultdict(list)
         self._transport = Transport(self, ed_token)
-
+        
+        self.logged_in = False
         self.user, self.user_courses = None, None
 
-    async def subscribe(self, course_ids: list = []):
-
-        for course_id in course_ids:
-
-            if not (isinstance(course_id, int) or course_id.isdigit()):
-                raise ValueError('Course ID must be integer or integer-like string')
-            
-            await self._transport._send({'type': 'course.subscribe', 'oid': int(course_id)})
-
-        await self._get_user()
-        await self._transport._connect()
-
-    async def _get_user(self):
+    async def _login(self):
         
         res = await self._transport._request('GET', '/api/user')
         self.user = res.get('user')
         self.user_courses = res.get('courses')
+        self.logged_in = True
+
+    @_ensure_login
+    async def subscribe(self, course_ids: list = None):
+
+        course_ids = course_ids or [course['course']['id'] for course in self.user_courses]
+
+        for course_id in course_ids:
+            assert isinstance(course_id, int)
+            await self._transport._send({'type': 'course.subscribe', 'oid': course_id})
+
+        await self._transport._connect()
+        
+    @_ensure_login
+    async def get_thread(self, thread_id):
+
+        res = await self._transport._request('GET', f'/api/threads/{thread_id}')
+        print(res)
+
 
     def add_event_hooks(self, cls):
         
