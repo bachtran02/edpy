@@ -3,7 +3,9 @@ import logging.config
 
 from .client import EdClient
 from .events import *
-from .models import *
+from .models.comment import Comment
+from .models.course import Course
+from .models.thread import Thread, ThreadType
 
 def listener(*events: Event):
     def wrapper(func):
