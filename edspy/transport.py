@@ -52,9 +52,11 @@ class Transport:
             async with self._session.request(method=method, url= 'https://{}{}'.format(API_HOST, endpoint),
                                              headers={'Authorization': self.ed_token}) as res:
                 
-                if code := res.status != 200:
+                if (code := res.status) != 200:
                     if code == 400:
                         raise AuthenticationError('Invalid Ed API token')
+                    if code == 403:
+                        raise RequestError('Forbidden error')
                     if code == 404:
                         raise RequestError('Invalid API endpoint')
 
