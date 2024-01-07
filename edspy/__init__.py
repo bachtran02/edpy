@@ -1,6 +1,3 @@
-import logging
-import logging.config
-
 from .client import EdClient
 from .events import *
 from .models.comment import Comment
