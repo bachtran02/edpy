@@ -4,7 +4,9 @@ import typing as t
 from collections import defaultdict
 from inspect import getmembers, ismethod
 
-from .models.thread import Thread, ThreadType
+from .errors import RequestError
+from .models.course import Course
+from .models.thread import Thread
 from .models.user import CourseUser
 from .models.endpoints.threads import GetThreadType
 
@@ -49,7 +51,18 @@ class EdClient():
             await self._transport._send({'type': 'course.subscribe', 'oid': course_id})
 
         await self._transport._connect()
-        
+
+    @_ensure_login
+    async def get_course(self, course_id: int) -> Course:
+        if (course := next(filter(lambda x: x.id == course_id, await self.get_courses()), None)):
+            return course
+        raise RequestError('Invalid course ID.')
+
+    @_ensure_login
+    async def get_courses(self) -> t.List[Course]:
+        res = await self._transport._request('GET', '/api/user')
+        return [Course(course.get('course')) for course in res.get('courses')]
+    
     @_ensure_login
     async def get_thread(self, thread_id) -> GetThreadType:
 

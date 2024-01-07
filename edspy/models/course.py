@@ -6,6 +6,18 @@ class Course:
     __slots__ = ('_raw', 'code', 'created_at', 'features', 'id', 'is_lab_regex_active', 
         'name', 'realm_id', 'session', 'settings', 'status', 'year')
     
+    id: int
+    realm_id: int
+    code: str
+    name: str
+    year: str
+    session: str
+    status: str  # archived or active
+    features: dict
+    settings: dict
+    created_at: str
+    is_lab_regex_active: bool
+    
     def __init__(self, data: dict) -> None:
         self._raw = data
         for slot in self.__slots__:
