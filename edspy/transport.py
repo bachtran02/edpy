@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from .errors import AuthenticationError, RequestError
 from .events import ThreadNewEvent, ThreadUpdateEvent, CommentNewEvent
 from .models.comment import Comment
-from .models.course import Course
 from .models.thread import Thread
 
 if TYPE_CHECKING:
@@ -142,11 +141,8 @@ class Transport:
             return
         
         if event_type == 'thread.new':
-            course = Course(next(filter(
-                lambda x: x['course']['id'] == data['thread']['course_id'],
-                self.client.user_courses)).get('course'))
             thread = Thread(data.get('thread'))
-            event = ThreadNewEvent(thread, course)
+            event = ThreadNewEvent(thread)
 
         elif event_type == 'thread.update':
             thread = Thread(data.get('thread'))

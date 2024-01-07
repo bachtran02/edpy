@@ -1,5 +1,4 @@
 from .models.comment import Comment
-from .models.course import Course
 from .models.thread import Thread
 
 class Event:
@@ -8,9 +7,8 @@ class Event:
 class ThreadNewEvent(Event):
    """Event when new thread is created"""
 
-   def __init__(self, thread: Thread, course: Course) -> None:
+   def __init__(self, thread: Thread) -> None:
       self.thread = thread
-      self.course = course
 
 class ThreadUpdateEvent(Event):
    """Event when a thread is updated (thread object may not be completed)"""
