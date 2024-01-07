@@ -12,6 +12,8 @@ from .models.endpoints.threads import GetThreadType
 
 from .transport import Transport
 
+_log = logging.getLogger('edspy.client')
+
 def _ensure_login(func):
     """
     Decorator to ensure valid ed API key before calling the methods.
@@ -32,13 +34,12 @@ class EdClient():
         self._transport = Transport(self, ed_token)
         
         self.logged_in = False
-        self.user, self.user_courses = None, None
 
     async def _login(self):
         
         res = await self._transport._request('GET', '/api/user')
-        self.user = res.get('user')
-        self.user_courses = res.get('courses')
+        user = res.get('user')
+        _log.info('Logged in as {} ({})'.format(user['name'], user['email']))
         self.logged_in = True
 
     @_ensure_login
