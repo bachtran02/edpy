@@ -1,5 +1,6 @@
 import asyncio
 
+import logging
 import typing as t
 from collections import defaultdict
 from inspect import getmembers, ismethod
@@ -43,9 +44,13 @@ class EdClient():
         self.logged_in = True
 
     @_ensure_login
-    async def subscribe(self, course_ids: list = None):
+    async def subscribe(self, course_ids: t.Optional[t.Union[int, t.List]] = None):
 
-        course_ids = course_ids or [course['course']['id'] for course in self.user_courses]
+        if isinstance(course_ids, int):
+            course_ids = [course_ids]
+        
+        # if no course id provided all accessible courses will be subscribed
+        course_ids = course_ids or [course.id for course in await self.get_courses()]
 
         for course_id in course_ids:
             assert isinstance(course_id, int)

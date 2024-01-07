@@ -49,17 +49,21 @@ class Transport:
         _log.info('Token renewed successfully.')
 
     async def _request(self, method: str, endpoint: str, to=None):
+
+        if not self.ed_token:
+            raise RequestError('Ed API token is not provided and cannot be loaded from environment') 
+
         try:
             async with self._session.request(method=method, url= 'https://{}{}'.format(API_HOST, endpoint),
                                              headers={'Authorization': self.ed_token}) as res:
                 
                 if (code := res.status) != 200:
                     if code == 400:
-                        raise AuthenticationError('Invalid Ed API token')
+                        raise AuthenticationError('Invalid Ed API token.')
                     if code == 403:
-                        raise RequestError('Forbidden error')
+                        raise RequestError('Missing permission')
                     if code == 404:
-                        raise RequestError('Invalid API endpoint')
+                        raise RequestError('Invalid API endpoint.')
 
                 if to is str:
                     return await res.text()
