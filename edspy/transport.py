@@ -7,7 +7,8 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from .errors import AuthenticationError, RequestError
-from .events import ThreadNewEvent, ThreadUpdateEvent, CommentNewEvent
+from .events import (ThreadNewEvent, ThreadUpdateEvent, ThreadDeleteEvent, CommentNewEvent,
+                     CommentUpdateEvent, CommentDeleteEvent, CourseCountEvent)
 from .models.comment import Comment
 from .models.thread import Thread
 
@@ -152,9 +153,24 @@ class Transport:
             thread = Thread(data.get('thread'))
             event = ThreadUpdateEvent(thread)
 
+        elif event_type == 'thread.delete':
+            thread = Thread(data.get('thread'))     # only thread.id is nontrivial
+            event = ThreadDeleteEvent(thread)
+
         elif event_type == 'comment.new':
             comment = Comment(data.get('comment'))
             event = CommentNewEvent(comment)
+
+        elif event_type == 'comment.update':
+            comment = Comment(data.get('comment'))
+            event = CommentUpdateEvent(comment)
+
+        elif event_type == 'comment.delete':
+            comment = Comment(data.get('comment'))  # only comment.id and comment.thread_id are nontrivial
+            event = CommentDeleteEvent(comment)
+
+        elif event_type == 'course.count':
+            event = CourseCountEvent(data.get('id'), data.get('count'))
 
         else:
             return
