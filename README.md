@@ -33,8 +33,8 @@ client = edspy.EdClient(ed_token='your-token-here')
 
 Some simple example usages of this module can be found [here](https://github.com/bachtran02/edspy/tree/dev/examples). 
 
-For a more advanced usage, I currently use this library to send notification whenever a new course is created to Discord via Discord webhooks. You can checkout the repo [here](https://github.com/bachtran02/ed-discohook).
+For a more advanced usage, I currently use this library to send notification whenever a new course thread is created to Discord via Discord webhooks. You can checkout the repo [here](https://github.com/bachtran02/ed-discohook).
 
 ## Additional possible use cases
-- Recording data regarding students & course staff behavior on Ed. 
+- Logging students & course staff activities on Ed. 
 - (to be updated)
