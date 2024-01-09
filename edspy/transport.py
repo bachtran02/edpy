@@ -7,8 +7,10 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from .errors import AuthenticationError, RequestError
-from .events import ThreadNewEvent, ThreadUpdateEvent
-from .models import Course, Thread
+from .events import (ThreadNewEvent, ThreadUpdateEvent, ThreadDeleteEvent, CommentNewEvent,
+                     CommentUpdateEvent, CommentDeleteEvent, CourseCountEvent)
+from .models.comment import Comment
+from .models.thread import Thread
 
 if TYPE_CHECKING:
     from .client import EdClient
@@ -30,10 +32,10 @@ class Transport:
     def __init__(self, client: 'EdClient', ed_token: str) -> None:
 
         self.client = client
-        self.ed_token = ed_token or os.environ['ED_API_TOKEN']
+        self.ed_token = ed_token or os.getenv('ED_API_TOKEN')
 
-        self._token = None
         self._ws = None
+        self._ws_token = None
 
         self._session = aiohttp.ClientSession()
         
@@ -41,22 +43,28 @@ class Transport:
         self._message_queue: list[str] = []
         self._message_sent = defaultdict(dict)
 
-    async def _login(self):
+    async def _get_ws_token(self):
         
         res = await self._request('POST', '/api/renew_token')
-        self._token = res['token']
+        self._ws_token = res['token']
         _log.info('Token renewed successfully.')
 
     async def _request(self, method: str, endpoint: str, to=None):
+
+        if not self.ed_token:
+            raise RequestError('Ed API token is not provided and cannot be loaded from environment') 
+
         try:
             async with self._session.request(method=method, url= 'https://{}{}'.format(API_HOST, endpoint),
                                              headers={'Authorization': self.ed_token}) as res:
                 
-                if code := res.status != 200:
+                if (code := res.status) != 200:
                     if code == 400:
-                        raise AuthenticationError('Invalid Ed API token')
+                        raise AuthenticationError('Invalid Ed API token.')
+                    if code == 403:
+                        raise RequestError('Missing permission')
                     if code == 404:
-                        raise RequestError('Invalid API endpoint')
+                        raise RequestError('Invalid API endpoint.')
 
                 if to is str:
                     return await res.text()
@@ -75,7 +83,7 @@ class Transport:
             try:
                 self._ws = await self._session.ws_connect(
                     url='wss://{}/api/stream'.format(API_HOST),
-                    params={'_token': self._token or ''},
+                    params={'_token': self._ws_token or ''},
                     heartbeat=60)
             except aiohttp.WSServerHandshakeError as ce:
                 if isinstance(ce, aiohttp.WSServerHandshakeError):
@@ -85,7 +93,7 @@ class Transport:
                             _log.error('Failed due to unkwown reason.')
                             raise ce
                         _log.info('Attempting to renew token...')
-                        await self._login()
+                        await self._get_ws_token()
                     elif ce.status == 503:  # may happen at times
                         pass
                 else:
@@ -138,15 +146,31 @@ class Transport:
             return
         
         if event_type == 'thread.new':
-            course = Course(next(filter(
-                lambda x: x['course']['id'] == data['thread']['course_id'],
-                self.client.user_courses)).get('course'))
             thread = Thread(data.get('thread'))
-            event = ThreadNewEvent(thread, course)
+            event = ThreadNewEvent(thread)
 
         elif event_type == 'thread.update':
             thread = Thread(data.get('thread'))
             event = ThreadUpdateEvent(thread)
+
+        elif event_type == 'thread.delete':
+            thread = Thread(data.get('thread'))     # only thread.id is nontrivial
+            event = ThreadDeleteEvent(thread)
+
+        elif event_type == 'comment.new':
+            comment = Comment(data.get('comment'))
+            event = CommentNewEvent(comment)
+
+        elif event_type == 'comment.update':
+            comment = Comment(data.get('comment'))
+            event = CommentUpdateEvent(comment)
+
+        elif event_type == 'comment.delete':
+            comment = Comment(data.get('comment'))  # only comment.id and comment.thread_id are nontrivial
+            event = CommentDeleteEvent(comment)
+
+        elif event_type == 'course.count':
+            event = CourseCountEvent(data.get('id'), data.get('count'))
 
         else:
             return
