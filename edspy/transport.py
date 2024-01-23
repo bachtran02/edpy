@@ -146,27 +146,31 @@ class Transport:
             return
         
         if event_type == 'thread.new':
-            thread = Thread(data.get('thread'))
+            data = data.get('thread')
+            thread = Thread(data, **data)
             event = ThreadNewEvent(thread)
 
         elif event_type == 'thread.update':
-            thread = Thread(data.get('thread'))
+            data = data.get('thread')
+            thread = Thread(data, **data)
             event = ThreadUpdateEvent(thread)
 
-        elif event_type == 'thread.delete':
-            thread = Thread(data.get('thread'))     # only thread.id is nontrivial
+        elif event_type == 'thread.delete': # only id is nontrivial
+            thread = Thread(data, id=data.get('thread_id'))     
             event = ThreadDeleteEvent(thread)
 
         elif event_type == 'comment.new':
-            comment = Comment(data.get('comment'))
+            data = data.get('comment')
+            comment = Comment(data, **data)
             event = CommentNewEvent(comment)
 
         elif event_type == 'comment.update':
-            comment = Comment(data.get('comment'))
+            data = data.get('comment')
+            comment = Comment(data, **data)
             event = CommentUpdateEvent(comment)
 
-        elif event_type == 'comment.delete':
-            comment = Comment(data.get('comment'))  # only comment.id and comment.thread_id are nontrivial
+        elif event_type == 'comment.delete': # only id and thread_id are nontrivial
+            comment = Comment(data, id=data.get('comment_id'), thread_id=data.get('thread_id'))
             event = CommentDeleteEvent(comment)
 
         elif event_type == 'course.count':
