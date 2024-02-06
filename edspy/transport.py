@@ -36,6 +36,7 @@ class Transport:
 
         self._ws = None
         self._ws_token = None
+        self._ws_closed = True
 
         self._session = aiohttp.ClientSession()
         
@@ -43,11 +44,25 @@ class Transport:
         self._message_queue: list[str] = []
         self._message_sent = defaultdict(dict)
 
+    @property
+    def ws_connected(self):
+        return self._ws is not None and not self._ws.closed
+
     async def _get_ws_token(self):
         
         res = await self._request('POST', '/api/renew_token')
         self._ws_token = res['token']
         _log.info('Token renewed successfully.')
+
+    """
+    async def close(self):
+        if not self._ws:
+            return
+        
+        await self._ws.close(code=aiohttp.WSCloseCode.OK)
+        self._ws = None
+        self._ws_closed = True
+    """
 
     async def _request(self, method: str, endpoint: str, to=None):
 
@@ -78,7 +93,8 @@ class Transport:
     async def _connect(self):
 
         attempt = 0
-        while not self._ws:
+        self._ws_closed = False
+        while not self.ws_connected and not self._ws_closed:
             attempt += 1
             try:
                 self._ws = await self._session.ws_connect(
@@ -123,15 +139,25 @@ class Transport:
         await self._ws.send_json(data)
 
     async def _listen(self):
+        """ Listens for websocket messages. """
+        close_code = None
         
         async for msg in self._ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 await self._handle_message(msg.json())
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 _log.error('Websocket connection closed with exception %s', self._ws.exception())
+                close_code = aiohttp.WSCloseCode.INTERNAL_ERROR
             elif msg.type in CLOSE_TYPES:
                 _log.info('Websocket connection closed with [%d] %s', msg.data, msg.extra)
+                close_code = msg.data
                 break
+
+        close_code = close_code or self._ws.close_code
+        _log.warning('WebSocket disconnected with the following: code=%s', close_code)
+        if self._ws:
+            await self._ws.close(code=close_code or aiohttp.WSCloseCode.OK)
+            self._ws = None
 
     async def _handle_message(self, message: dict):
         

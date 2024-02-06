@@ -58,6 +58,11 @@ class EdClient():
 
         await self._transport._connect()
 
+    """
+    async def close(self):
+        await self._transport.close()
+    """
+
     @_ensure_login
     async def get_course(self, course_id: int) -> Course:
         if (course := next(filter(lambda x: x.id == course_id, await self.get_courses()), None)):
