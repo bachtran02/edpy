@@ -175,34 +175,41 @@ class Transport:
             data = data.get('thread')
             thread = Thread(data, **data)
             event = ThreadNewEvent(thread)
+            _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'thread.update':
             data = data.get('thread')
             thread = Thread(data, **data)
             event = ThreadUpdateEvent(thread)
+            # _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'thread.delete': # only id is nontrivial
             thread = Thread(data, id=data.get('thread_id'))     
             event = ThreadDeleteEvent(thread)
+            _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.new':
             data = data.get('comment')
             comment = Comment(data, **data)
             event = CommentNewEvent(comment)
+            _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.update':
             data = data.get('comment')
             comment = Comment(data, **data)
             event = CommentUpdateEvent(comment)
+            _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.delete': # only id and thread_id are nontrivial
             comment = Comment(data, id=data.get('comment_id'), thread_id=data.get('thread_id'))
             event = CommentDeleteEvent(comment)
+            _log.info('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'course.count':
             event = CourseCountEvent(data.get('id'), data.get('count'))
+            # _log.info('Event: %s - Payload: %s', event_type, data)
 
         else:
-            return
+            _log.warning('Uknown event. Event: %s - Payload: %s', event_type, data)
         
         await self.client._dispatch_event(event)
