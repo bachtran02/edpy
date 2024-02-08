@@ -35,6 +35,7 @@ class EdClient():
         self._transport = Transport(self, ed_token)
         
         self.logged_in = False
+        self.is_subscribed = False
 
     async def _login(self):
         
@@ -45,22 +46,24 @@ class EdClient():
 
     @_ensure_login
     async def subscribe(self, course_ids: t.Optional[t.Union[int, t.List]] = None):
-
-        if isinstance(course_ids, int):
-            course_ids = [course_ids]
         
         # if no course id provided all accessible courses will be subscribed
         course_ids = course_ids or [course.id for course in await self.get_courses()]
+        course_ids = course_ids if isinstance(course_ids, t.Iterable) else [course_ids]
 
-        for course_id in course_ids:
-            assert isinstance(course_id, int)
-            await self._transport._send({'type': 'course.subscribe', 'oid': course_id})
+        self.is_subscribed = True
+        while self.is_subscribed:
+            
+            for course_id in course_ids:
+                assert isinstance(course_id, int)
+                await self._transport._send({'type': 'course.subscribe', 'oid': course_id})
 
-        await self._transport._connect()
+            await self._transport._connect()
 
     """
     async def close(self):
         await self._transport.close()
+        self.is_subscribed = False
     """
 
     @_ensure_login

@@ -158,6 +158,7 @@ class Transport:
         if self._ws:
             await self._ws.close(code=close_code or aiohttp.WSCloseCode.OK)
             self._ws = None
+        self._ws_closed = True
 
     async def _handle_message(self, message: dict):
         
