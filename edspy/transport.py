@@ -69,6 +69,9 @@ class Transport:
         if not self.ed_token:
             raise RequestError('Ed API token is not provided and cannot be loaded from environment') 
 
+        _log.debug('Sending request to Ed server with the following parameters: method=%s, endpoint=%s',
+                method, endpoint)
+
         try:
             async with self._session.request(method=method, url= 'https://{}{}'.format(API_HOST, endpoint),
                                              headers={'Authorization': self.ed_token}) as res:
@@ -133,9 +136,13 @@ class Transport:
 
         data['id'] = self._message_id = self._message_id + 1
         self._message_sent[self._message_id] = data
-        if not self._ws:
+        
+        if not self.ws_connected:
+            _log.debug('WebSocket not ready; queued outgoing payload.')
             self._message_queue.append(data)
             return
+        
+        _log.debug('Sending payload %s', str(data))
         await self._ws.send_json(data)
 
     async def _listen(self):
@@ -165,7 +172,6 @@ class Transport:
         event_type, data = message['type'], message.get('data')
         event = None
 
-        _log.debug('Event: %s - Payload: %s', event_type, data)
         if event_type in ('chat.init', 'course.subscribe'):
             if event_type == 'course.subscribe':
                 sent_msg = self._message_sent[message['id']]
@@ -176,39 +182,39 @@ class Transport:
             data = data.get('thread')
             thread = Thread(data, **data)
             event = ThreadNewEvent(thread)
-            _log.info('Event: %s - Payload: %s', event_type, data)
+            _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'thread.update':
             data = data.get('thread')
             thread = Thread(data, **data)
             event = ThreadUpdateEvent(thread)
-            # _log.info('Event: %s - Payload: %s', event_type, data)
+            # _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'thread.delete': # only id is nontrivial
             thread = Thread(data, id=data.get('thread_id'))     
             event = ThreadDeleteEvent(thread)
-            _log.info('Event: %s - Payload: %s', event_type, data)
+            _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.new':
             data = data.get('comment')
             comment = Comment(data, **data)
             event = CommentNewEvent(comment)
-            _log.info('Event: %s - Payload: %s', event_type, data)
+            _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.update':
             data = data.get('comment')
             comment = Comment(data, **data)
             event = CommentUpdateEvent(comment)
-            _log.info('Event: %s - Payload: %s', event_type, data)
+            _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'comment.delete': # only id and thread_id are nontrivial
             comment = Comment(data, id=data.get('comment_id'), thread_id=data.get('thread_id'))
             event = CommentDeleteEvent(comment)
-            _log.info('Event: %s - Payload: %s', event_type, data)
+            _log.debug('Event: %s - Payload: %s', event_type, data)
 
         elif event_type == 'course.count':
             event = CourseCountEvent(data.get('id'), data.get('count'))
-            # _log.info('Event: %s - Payload: %s', event_type, data)
+            # _log.debug('Event: %s - Payload: %s', event_type, data)
 
         else:
             _log.warning('Uknown event. Event: %s - Payload: %s', event_type, data)
