@@ -35,7 +35,6 @@ class Transport:
         self.ed_token = ed_token or os.getenv('ED_API_TOKEN')
 
         self._ws = None
-        self._ws_token = None
         self._ws_closed = True
 
         self._session = aiohttp.ClientSession()
@@ -47,12 +46,6 @@ class Transport:
     @property
     def ws_connected(self):
         return self._ws is not None and not self._ws.closed
-
-    async def _get_ws_token(self):
-        
-        res = await self._request('POST', '/api/renew_token')
-        self._ws_token = res['token']
-        _log.info('Token renewed successfully.')
 
     """
     async def close(self):
@@ -102,7 +95,7 @@ class Transport:
             try:
                 self._ws = await self._session.ws_connect(
                     url='wss://{}/api/stream'.format(API_HOST),
-                    params={'_token': self._ws_token or ''},
+                    headers={'Authorization': self.ed_token},
                     heartbeat=60)
             except aiohttp.WSServerHandshakeError as ce:
                 if isinstance(ce, aiohttp.WSServerHandshakeError):
@@ -111,8 +104,6 @@ class Transport:
                         if attempt == 10:
                             _log.error('Failed due to unkwown reason.')
                             raise ce
-                        _log.info('Attempting to renew token...')
-                        await self._get_ws_token()
                     elif ce.status == 503:  # may happen at times
                         pass
                 else:
