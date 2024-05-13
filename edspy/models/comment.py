@@ -46,7 +46,7 @@ class Comment:
         self.anonymous_id: int = anonymous_id
         self.vote: int = vote
         self.comments: t.List['Comment'] = comments
-        self.user: t.Optional[CourseUser] = user
+        self.user: t.Optional[CourseUser] = CourseUser(user) if user else None
 
     def __repr__(self):
         return f'<Comment id={self.id}>'

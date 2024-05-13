@@ -96,7 +96,7 @@ class Thread:
         self.duplicate_title: t.Optional[str] = duplicate_title
         self.answers: list[Comment] = answers
         self.comments: list[Comment] = comments
-        self.user: t.Optional[CourseUser] = user
+        self.user: t.Optional[CourseUser] = CourseUser(user) if user else None
 
     def __repr__(self):
         return f'<Thread id={self.id}>'
