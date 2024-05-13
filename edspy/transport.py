@@ -69,6 +69,7 @@ class Transport:
             async with self._session.request(method=method, url= 'https://{}{}'.format(API_HOST, endpoint),
                                              headers={'Authorization': self.ed_token}) as res:
                 
+                _log.debug('Received response from server: status_code=%s, reason=%s', res.status, res.reason)
                 if (code := res.status) != 200:
                     if code == 400:
                         raise AuthenticationError('Invalid Ed API token.')
@@ -100,14 +101,14 @@ class Transport:
             except aiohttp.WSServerHandshakeError as ce:
                 if isinstance(ce, aiohttp.WSServerHandshakeError):
                     if ce.status == 401:
-                        _log.info('Authentication failed.')
+                        _log.warning('Authentication failed.')
                         if attempt == 10:
                             _log.error('Failed due to unkwown reason.')
                             raise ce
                     elif ce.status == 503:  # may happen at times
                         pass
                 else:
-                    _log.error('Failed to connect to websocket with status code {} and\
+                    _log.warning('Failed to connect to websocket with status code {} and\
                         error message "{}".Retrying...'.format(ce.status, ce.message))
 
                 backoff = 5
