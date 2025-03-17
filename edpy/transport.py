@@ -86,6 +86,9 @@ class Transport:
 
         except aiohttp.ClientConnectorError:
             pass
+        except aiohttp.ContentTypeError as error:
+            _log.debug('Error decoding JSON: status=%s message=%s payload=%s', 
+               error.status, error.message, await res.text())
 
     async def _connect(self):
 
