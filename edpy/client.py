@@ -13,7 +13,7 @@ from .models.endpoints.threads import GetThreadType
 
 from .transport import Transport
 
-_log = logging.getLogger('edspy.client')
+_log = logging.getLogger('edpy.client')
 
 def _ensure_login(func):
     """

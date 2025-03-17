@@ -15,7 +15,7 @@ from .models.thread import Thread
 if TYPE_CHECKING:
     from .client import EdClient
 
-_log = logging.getLogger('edspy.transport')
+_log = logging.getLogger('edpy.transport')
 
 API_HOST = 'us.edstem.org'
 

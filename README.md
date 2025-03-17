@@ -1,4 +1,4 @@
-# edspy
+# edpy
 
 An (unofficial) wrapper for [Ed](https://edstem.org) API in Python. As the main goal of the module is to listen to Ed's websocket connections for events, most of the methods are asynchronous. This library may be useful if you are looking to automate actions that should be executed should a specific event be sent from an Ed course.
 
@@ -23,15 +23,15 @@ ED_API_TOKEN=your-token-here
 ```
 You can also directly pass your API key as an argument when creating an `EdClient()` object.
 ```python 
-from edspy import edspy
+from edpy import edpy
 
-client = edspy.EdClient(ed_token='your-token-here')
+client = edpy.EdClient(ed_token='your-token-here')
 ```
 > Your API key can be created through [https://edstem.org/us/settings/api-tokens](https://edstem.org/us/settings/api-tokens).
 
 >Note: The API key should be kept secret, and not committed through any version control system as it acts as an authorization for any Ed usage on behalf of your account.
 
-Some simple example usages of this module can be found [here](https://github.com/bachtran02/edspy/tree/dev/examples). 
+Some simple example usages of this module can be found [here](https://github.com/bachtran02/edpy/tree/dev/examples). 
 
 For a more advanced usage, I currently use this library to send notification whenever a new course thread is created to Discord via Discord webhooks. You can checkout the repo [here](https://github.com/bachtran02/ed-discohook).
 
